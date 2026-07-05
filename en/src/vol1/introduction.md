@@ -124,3 +124,53 @@ expected `Bool`, found `Int`
 This means that we need `sum` to be a `Bool`, but the type of the right-hand side of `=` is `Int`.
 
 Types can help us avoid many errors before the program runs. In the following chapters, we will see how Lane helps us do this.
+
+## Local Bindings and Scope
+
+Bindings can be written at the top level of a file, but they are more commonly written inside function definitions. These are local bindings. For example, the integer-printing program above can be written like this:
+
+```
+// scope.lane
+module Scope
+
+let add : (Int, Int) -> Int = builtin("%i64_add")
+
+import Stdlib.Io.*
+
+pub fn print_sum() -> Unit ! Io {
+  let sum = add(1, 2)
+  println!("sum is " + to_string(sum))
+}
+```
+
+This program produces the same result as before. The difference is that local bindings can omit their types. Notice that we did not write `: Int` here; the compiler automatically infers that the type of `sum` is `Int`. This feature is very useful when a type is hard to write down.
+
+There is another difference: now only the inside of the `print_sum` function can access `sum`. More precisely, `sum` can be accessed only after the local `let` binding on line 9 and before the function definition ends on line 11. This region is called a scope. Each local binding can be accessed only by expressions inside its scope. For a top-level binding, its scope is the whole file. For a binding marked with the `pub` visibility marker, other modules can also access it by importing the module.
+
+Inside the scope of a binding, if a new binding with the same name appears, the new binding shadows the old one. For example:
+
+```
+pub fn print_sum() -> Unit ! Io {
+  let sum = add(1, 2)
+  let sum = add(3, 4)
+  println!("sum is " + to_string(sum))
+}
+```
+
+This program prints `sum is 7`, not `sum is 3`, because the second binding shadows the first binding. Now consider another example. In this example, we define a local function. Like a local binding, it can be accessed by later expressions inside its scope:
+
+```
+pub fn print_sum() -> Unit ! Io {
+  let sum = add(1, 2)
+  fn add3(a : Int, b : Int, c : Int) -> Int {
+    let sum = add(a, b)
+    add(sum, c)
+  }
+  let sum = add3(sum, sum, sum)
+  println!("sum is " + to_string(sum))
+}
+```
+
+This program prints `sum is 9`. The reason is that the `sum` on line 2 has the result 3; the `sum` on line 5 refers to the binding on line 4, not the shadowed binding on line 2. When `add3(sum, sum, sum)` is computed on line 7, the argument `sum` refers to the binding on line 2, because the scope of the `sum` bound on line 4 is only inside the body of `add3`, and it ends when that function body ends on line 6. Therefore, the final result is `add3(3, 3, 3) => add(add(3, 3), 3) => add(6, 3) => 9`.
+
+Scope limits where a binding can be accessed; shadowing ensures that the meaning of a name is determined by the nearest effective binding with that name. With these two rules, we can compose code with more confidence, without worrying that some distant binding with the same name will accidentally change the meaning of the current code.
