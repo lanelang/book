@@ -66,9 +66,61 @@ It is worth explaining the command and program text we used.
   - The parentheses after the function name are the function's parameter list. The `hello` function has no parameters, so the parentheses are empty.
   - After the arrow `->` is the function's return type. `Unit ! Io` means the function returns a value of type `Unit` and produces an effect of type `Io`.
 - The function body on line 6 is enclosed in braces, and it contains only one expression. That expression uses the `println` operation to produce an `Io` effect.
+- The part enclosed in double quotes `"` is a string.
 
-The concepts that appear here, including modules, functions, visibility, types, and effects, are explained in detail in the main chapters.
+The concepts that appear here, including modules, strings, functions, visibility, types, and effects, are explained in detail in the main chapters.
 
 Now look at the command we ran. `lane run` is the main entry point for running a Lane file. It takes a positional argument that specifies the function to run and the file that contains it. In our example, we run the `hello` function in `hello.lane`. It is easy to imagine defining multiple functions in one file and running whichever one is needed.
 
 `--lib <file>` adds another Lane source file as a library, while `--lib-dir <path>` adds every Lane file under a directory as a library. Because we passed one of these options, `hello.lane` can import the `Stdlib.Io` module defined in another file.
+
+## Bindings, Integers, Functions, and Builtin Functions
+
+With Lane's builtin integer type and builtin functions, we can use Lane to do some simple computation. For example, we can compute the sum of two integers:
+
+```
+// integer.lane
+module Integer
+
+let add : (Int, Int) -> Int = builtin("%i64_add")
+
+let sum : Int = add(1, 2)
+
+import Stdlib.Io.*
+
+pub fn print_sum() -> Unit ! Io {
+  println!("sum is " + to_string(sum))
+}
+```
+
+Run `lane run integer.lane:print_sum --lib io.lane`, and you should see `sum is 3` printed in the console.
+
+The first line of this program is a comment. A comment starts with two consecutive slashes `//`, and the rest of the line is only used to explain the meaning of the program; it does not affect the program's behavior. Comments are ignored by the compiler, which in this case is what `lane run` invokes, so they may contain any text.
+
+This time, first look at line 6. It binds the value `add(1, 2)` to the name `sum`. After we bind a value to a name, we can use that name anywhere to stand for the original value. For example, we use `sum` on line 11; if we replaced that `sum` with `add(1, 2)`, the program would produce the same result.
+
+After the colon in a `let` binding is the type of the binding. The type of `sum` is `Int`, which means `sum` is an integer, more precisely a 64-bit integer.
+
+The expression used to compute `sum` is the function application `add(1, 2)`. We can understand this by common sense: the result of `add(1, 2)` is the integer `3`.
+
+Line 4 binds the builtin function `builtin("%i64_add")` to the name `add`. Here, the type of `add` is `(Int, Int) -> Int`, which means `add` is a function. Both of its parameters are integers, and its return type is also an integer. Therefore, after passing two integers as arguments to `add`, the result, which is the value of the whole expression, is also an integer.
+
+The right-hand side of the binding on line 4 is a builtin function. For now, we do not need to care about the details of this function. We only need to know that implementing integer addition inside the Lane language itself would be very troublesome; by using a builtin function, we can hand this function to the compiler, and the compiler will implement the correct operation for us.
+
+Lane's `Int` type is a 64-bit integer, which means its range is from -2^63 to 2^63-1. In general, we will not need numbers that large. Besides `Int`, Lane has several other builtin types: `Bool`, `String`, and `Unit`.
+
+We can slightly modify line 6 of the program above:
+
+```
+let sum : Bool = add(1, 2)
+```
+
+That is, we change the type of `sum` to the Boolean type `Bool`. If we run `lane run` or `lane check` again, the compiler will immediately report an error:
+
+```
+expected `Bool`, found `Int`
+```
+
+This means that we need `sum` to be a `Bool`, but the type of the right-hand side of `=` is `Int`.
+
+Types can help us avoid many errors before the program runs. In the following chapters, we will see how Lane helps us do this.
