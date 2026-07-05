@@ -23,6 +23,8 @@ jobs:
 
       - name: Set up Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Install mdBook
         run: cargo install mdbook --locked --version 0.4.52
