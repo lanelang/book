@@ -27,13 +27,17 @@ jobs:
       - name: Install mdBook
         run: cargo install mdbook --locked --version 0.4.52
 
-      - name: Build book
-        run: mdbook build
+      - name: Build books
+        run: |
+          mkdir -p site
+          cp index.html site/index.html
+          mdbook build en --dest-dir ../site/en
+          mdbook build zh --dest-dir ../site/zh
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: book
+          path: site
 
   deploy:
     environment:
