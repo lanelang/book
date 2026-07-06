@@ -13,7 +13,7 @@ The traditional first step in learning programming or a programming language is 
 ```
 module Hello
 
-import Stdlib.Io.*
+import Basic.Io.*
 
 pub fn hello() -> Unit ! Io {
   println!("hello, world")
@@ -23,7 +23,7 @@ pub fn hello() -> Unit ! Io {
 How to run this program depends on the context. In a Unix environment with the lane tool installed, suppose we save the text above as `hello.lane`. The content of that file is the program's source code. Run the following command:
 
 ```
-lane run hello.lane:hello --lib-dir $LANE_STD
+lane run hello.lane:hello --lib-dir $LANE_BASIC
 ```
 
 This runs the program and prints the following output in the terminal:
@@ -32,10 +32,10 @@ This runs the program and prints the following output in the terminal:
 hello, world
 ```
 
-The command entered in the terminal also shows that we need to pass the `$LANE_STD` environment variable, which points to the standard library directory. In general, installing the toolchain also installs the standard library to a default path and sets the `$LANE_STD` environment variable to that path. However, "standard library" is only a convention in Lane, not a real standard. Therefore, it is normal to fail to find the correct `$LANE_STD` or the standard library files. To avoid that, we can write another file named `io.lane` in the current directory:
+The command entered in the terminal also shows that we need to pass the `$LANE_BASIC` environment variable, which points to the Basic library directory. In general, installing the toolchain may also install the Basic library to a default path and set the `$LANE_BASIC` environment variable to that path. Basic is only a convention in Lane, not a standard library or a privileged language component. Therefore, it is normal to fail to find the correct `$LANE_BASIC` or Basic library files. To avoid that, we can write another file named `io.lane` in the current directory:
 
 ```
-module Stdlib.Io
+module Basic.Io
 
 pub effect Io {
   println(String) -> Unit
@@ -50,7 +50,7 @@ lane run hello.lane:hello --lib io.lane
 
 This prints normally.
 
-By comparison, completing this task in the playground is much easier. The web page includes several necessary standard library files, including the `io.lane` file we need. Ideally, after the hello program has been entered, the output box will show:
+By comparison, completing this task in the playground is much easier. The web page includes several necessary Basic library files, including the `io.lane` file we need. Ideally, after the hello program has been entered, the output box will show:
 
 ```
 hello, world
@@ -59,7 +59,7 @@ hello, world
 It is worth explaining the command and program text we used.
 
 - Line 1 declares a module named `Hello`. The first statement in any Lane file must be a module name declaration, and each file can declare only one module.
-- Line 3 imports another module. The wildcard `*` imports every name under the `Stdlib.Io` module. Here, we use only one name: `println`.
+- Line 3 imports another module. The wildcard `*` imports every name under the `Basic.Io` module. Here, we use only one name: `println`.
 - Lines 5-7 define a function.
   - At the beginning of line 5, `pub` declares the function's visibility. It means the function can be accessed externally, for example by the `lane run` command or by other modules.
   - `fn` is the keyword for declaring a function, and `hello` after it is the function's name.
@@ -72,7 +72,7 @@ The concepts that appear here, including modules, strings, functions, visibility
 
 Now look at the command we ran. `lane run` is the main entry point for running a Lane file. It takes a positional argument that specifies the function to run and the file that contains it. In our example, we run the `hello` function in `hello.lane`. It is easy to imagine defining multiple functions in one file and running whichever one is needed.
 
-`--lib <file>` adds another Lane source file as a library, while `--lib-dir <path>` adds every Lane file under a directory as a library. Because we passed one of these options, `hello.lane` can import the `Stdlib.Io` module defined in another file.
+`--lib <file>` adds another Lane source file as a library, while `--lib-dir <path>` adds every Lane file under a directory as a library. Because we passed one of these options, `hello.lane` can import the `Basic.Io` module defined in another file.
 
 ## Bindings, Integers, Functions, and Builtin Functions
 
@@ -86,7 +86,7 @@ let add : (Int, Int) -> Int = builtin("%i64_add")
 
 let sum : Int = add(1, 2)
 
-import Stdlib.Io.*
+import Basic.Io.*
 
 pub fn print_sum() -> Unit ! Io {
   println!("sum is " + to_string(sum))
@@ -135,7 +135,7 @@ module Scope
 
 let add : (Int, Int) -> Int = builtin("%i64_add")
 
-import Stdlib.Io.*
+import Basic.Io.*
 
 pub fn print_sum() -> Unit ! Io {
   let sum = add(1, 2)

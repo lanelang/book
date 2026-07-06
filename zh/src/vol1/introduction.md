@@ -13,7 +13,7 @@ Lane 语言可以通过安装 lane 工具来使用，也可以在官方 [playgro
 ```
 module Hello
 
-import Stdlib.Io.*
+import Basic.Io.*
 
 pub fn hello() -> Unit ! Io {
   println!("hello, world")
@@ -23,7 +23,7 @@ pub fn hello() -> Unit ! Io {
 如何运行这个程序取决于具体场景。在安装了 lane 工具的 Unix 环境中，假设我们将上述文本保存为 `hello.lane` 文件，文件内容就叫作程序的源代码。使用如下命令：
 
 ```
-lane run hello.lane:hello --lib-dir $LANE_STD
+lane run hello.lane:hello --lib-dir $LANE_BASIC
 ```
 
 即可运行该程序，并在终端中看到如下信息：
@@ -32,10 +32,10 @@ lane run hello.lane:hello --lib-dir $LANE_STD
 hello, world
 ```
 
-从输入到终端的命令中也能看出，我们需要手动传入一个指向标准库目录的环境变量 `$LANE_STD`。一般来说，安装工具链时会同时把标准库安装到默认路径，并将环境变量 `$LANE_STD` 设置为该路径。然而，「标准库」只是 Lane 语言中的一个约定，而非真正的标准。因此，找不到正确的 `$LANE_STD` 或标准库文件也是很正常的事情。为此，我们可以在当前目录编写另一个文件 `io.lane`，内容如下：
+从输入到终端的命令中也能看出，我们需要手动传入一个指向 Basic 基础库目录的环境变量 `$LANE_BASIC`。一般来说，安装工具链时可以同时把 Basic 基础库安装到默认路径，并将环境变量 `$LANE_BASIC` 设置为该路径。Basic 只是 Lane 语言中的约定，不是标准库，也不是拥有特权的语言组件。因此，找不到正确的 `$LANE_BASIC` 或 Basic 基础库文件也是很正常的事情。为此，我们可以在当前目录编写另一个文件 `io.lane`，内容如下：
 
 ```
-module Stdlib.Io
+module Basic.Io
 
 pub effect Io {
   println(String) -> Unit
@@ -50,7 +50,7 @@ lane run hello.lane:hello --lib io.lane
 
 就能够正常打印。
 
-相对而言，在 playground 网页上完成这个任务要容易得多。网页中内置了一些必要的标准库文件，包括我们需要用到的 `io.lane`。理想情况下，当 hello 程序的代码输入完毕后，输出框就能呈现如下信息：
+相对而言，在 playground 网页上完成这个任务要容易得多。网页中内置了一些必要的 Basic 基础库文件，包括我们需要用到的 `io.lane`。理想情况下，当 hello 程序的代码输入完毕后，输出框就能呈现如下信息：
 
 ```
 hello, world
@@ -59,7 +59,7 @@ hello, world
 下面有必要对我们用到的命令和程序文本做一些说明。
 
 - 代码的第 1 行声明了一个模块 `Hello`。任何 Lane 文件的第一条语句都必须是模块名称声明，并且一个文件只能声明一个模块。
-- 第 3 行引入了另一个模块。通配符 `*` 表示引入 `Stdlib.Io` 模块下的所有名字。这里我们只用到了一个名字，也就是 `println`。
+- 第 3 行引入了另一个模块。通配符 `*` 表示引入 `Basic.Io` 模块下的所有名字。这里我们只用到了一个名字，也就是 `println`。
 - 第 5-7 行定义了一个函数。
   - 其中，第 5 行开头声明了这个函数的可见性：`pub` 表示函数可以被外部访问，例如被 `lane run` 命令或其他模块访问。
   - `fn` 是声明函数的关键字，后面的 `hello` 是函数的名字。
@@ -72,7 +72,7 @@ hello, world
 
 下面再来看我们执行的命令。`lane run` 是运行 Lane 文件的主要入口，后面接一个位置参数，表示需要运行的函数以及它所处的文件。在我们的例子中，运行的是 `hello.lane` 文件中的 `hello` 函数。可以想象，我们可以在一个文件中定义多个函数，并按需执行其中某一个函数。
 
-`--lib <file>` 用于添加作为库使用的其他 Lane 源代码文件，而 `--lib-dir <path>` 可以一次性把一个目录下的所有 Lane 文件都作为库添加进去。正因为添加了这两个参数，我们才能够在 `hello.lane` 中引入其他文件定义的 `Stdlib.Io` 模块。
+`--lib <file>` 用于添加作为库使用的其他 Lane 源代码文件，而 `--lib-dir <path>` 可以一次性把一个目录下的所有 Lane 文件都作为库添加进去。正因为添加了这两个参数，我们才能够在 `hello.lane` 中引入其他文件定义的 `Basic.Io` 模块。
 
 ## 绑定、整数、函数和内置函数
 
@@ -86,7 +86,7 @@ let add : (Int, Int) -> Int = builtin("%i64_add")
 
 let sum : Int = add(1, 2)
 
-import Stdlib.Io.*
+import Basic.Io.*
 
 pub fn print_sum() -> Unit ! Io {
   println!("sum is " + to_string(sum))
@@ -135,7 +135,7 @@ module Scope
 
 let add : (Int, Int) -> Int = builtin("%i64_add")
 
-import Stdlib.Io.*
+import Basic.Io.*
 
 pub fn print_sum() -> Unit ! Io {
   let sum = add(1, 2)
