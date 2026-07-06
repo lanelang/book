@@ -174,3 +174,97 @@ pub fn print_sum() -> Unit ! Io {
 This program prints `sum is 9`. The reason is that the `sum` on line 2 has the result 3; the `sum` on line 5 refers to the binding on line 4, not the shadowed binding on line 2. When `add3(sum, sum, sum)` is computed on line 7, the argument `sum` refers to the binding on line 2, because the scope of the `sum` bound on line 4 is only inside the body of `add3`, and it ends when that function body ends on line 6. Therefore, the final result is `add3(3, 3, 3) => add(add(3, 3), 3) => add(6, 3) => 9`.
 
 Scope limits where a binding can be accessed; shadowing ensures that the meaning of a name is determined by the nearest effective binding with that name. With these two rules, we can compose code with more confidence, without worrying that some distant binding with the same name will accidentally change the meaning of the current code.
+
+## Booleans, Enums, and Pattern Matching
+
+In Lane, we can compare two numbers and enter different program branches based on the result of the comparison. The `print_less_one` function defined below prints the smaller of its two arguments:
+
+```
+// compare.lane
+let less : (Int, Int) -> Bool = builtin("%i64_lt")
+
+fn print_less_one(a : Int, b : Int) -> Unit ! Io {
+  match less(a, b) {
+    true => println!(to_string(a))
+    false => println!(to_string(b))
+  }
+}
+```
+
+To avoid repetition, from now on we will no longer write out the module declaration and module import statements every time.
+
+In the program above, we bind the builtin function `%i64_lt` to `less`. It compares the sizes of two integers. When `a < b`, `less(a, b)` returns the Boolean value `true`. There are only two Boolean values: `true` and `false`. The next three lines of code match on the comparison result: if the result is `true`, the program prints `a`; otherwise, it prints `b`.
+
+For Boolean values, besides pattern matching, we can also use a conditional expression, also known as an if-then-else expression. The following function has the same behavior as the one above:
+
+```
+fn print_less_one(a : Int, b : Int) -> Unit ! Io {
+  if less(a, b) {
+    println!(to_string(a))
+  } else {
+    println!(to_string(b))
+  }
+}
+```
+
+If the expression after `if` evaluates to `true`, then the expression inside the first pair of braces, also called the then branch, becomes the result of the whole conditional expression; otherwise, the expression inside the second pair of braces, also called the else branch, becomes the result of the whole conditional expression.
+
+Like `Bool`, we can also define our own types whose values can be described by listing all possible cases. For example, we can define the two sides of a coin:
+
+```
+enum Coin {
+  head()
+  tail()
+}
+```
+
+Then we can construct the corresponding value with `TypeName::constructor()`. For example:
+
+```
+let first_coin : Coin = Coin::head()
+```
+
+When there is no ambiguity, the type name can be omitted:
+
+```
+let second_coin : Coin = tail()
+```
+
+With pattern matching, we can use these values:
+
+```
+match coin {
+  Coin::head() => println!("head")
+  tail() => println!("tail")
+}
+```
+
+Enum values can also carry data. For example, we can define a shape type. A shape can be a circle or a rectangle. If it is a circle, we need a floating-point number `Double` to describe its radius; if it is a rectangle, we need two floating-point numbers to describe its length and width:
+
+```
+enum Shape {
+  circle(Double)
+  rectangle(Double, Double)
+}
+```
+
+Defining values of the shape type works the same way as before: we only need to put the carried data inside the parentheses:
+
+```
+let shape1 : Shape = circle(4.0)
+
+let shape2 : Shape = rectangle(2.0, 3.0)
+```
+
+We can write a function that computes the area of a shape:
+
+```
+fn surface(shape : Shape) -> Double {
+  match shape {
+    circle(r) => r * r * pi
+    rectangle(x, y) => x * y
+  }
+}
+```
+
+We will introduce the floating-point type `Double`, the multiplication sign `*`, and the constant `pi` later, but that does not stop us from understanding this program. Pattern matching enters the branch corresponding to how the value was constructed and binds the data carried by the value to the names inside the parentheses. For example, `circle(r)` binds the circle's radius to `r`, and `rectangle(x, y)` binds the rectangle's length and width to `x` and `y`.

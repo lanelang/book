@@ -174,3 +174,97 @@ pub fn print_sum() -> Unit ! Io {
 这个程序会打印 `sum is 9`。原因是，第 2 行的 `sum` 结果是 3；第 5 行的 `sum` 指向的是第 4 行的绑定，而不是被遮蔽的第 2 行。在第 7 行计算 `add3(sum, sum, sum)` 时，这里的参数 `sum` 指向第 2 行的绑定，因为第 4 行绑定的 `sum` 的作用域只在 `add3` 函数体内部，到第 6 行函数体结束时就结束了。因此，最终结果就是 `add3(3, 3, 3) => add(add(3, 3), 3) => add(6, 3) => 9`。
 
 作用域限制了一个绑定可以被访问的范围；遮蔽则让同名绑定的含义始终由最近的有效绑定决定。有了这两条规则，我们就可以更放心地组合代码，而不用担心某个远处的同名绑定意外改变当前代码的语义。
+
+## 布尔、枚举和模式匹配
+
+在 Lane 中，我们可以对两个数进行比较，并根据比较的结果进入不同的程序分支。下面定义的 `print_less_one` 函数会打印两个参数中更小的一个：
+
+```
+// compare.lane
+let less : (Int, Int) -> Bool = builtin("%i64_lt")
+
+fn print_less_one(a : Int, b : Int) -> Unit ! Io {
+  match less(a, b) {
+    true => println!(to_string(a))
+    false => println!(to_string(b))
+  }
+}
+```
+
+为避免重复，从现在起，我们将不再反复写出模块声明和模块引入语句。
+
+在上述程序中，我们把内置函数 `%i64_lt` 绑定到了 `less`。它用于比较两个整数的大小。当 `a < b` 时，`less(a, b)` 会返回布尔值 `true`。布尔值只有两种，分别是 `true` 和 `false`。接下来的三行代码对比较结果进行匹配：如果结果为 `true`，就打印 `a`；否则打印 `b`。
+
+对于布尔值，除了使用模式匹配，还可以使用条件表达式，也就是 if-then-else 表达式。下面这个函数在功能上和上面的定义相同：
+
+```
+fn print_less_one(a : Int, b : Int) -> Unit ! Io {
+  if less(a, b) {
+    println!(to_string(a))
+  } else {
+    println!(to_string(b))
+  }
+}
+```
+
+如果 `if` 后面的表达式结果是 `true`，那么第一个花括号内的表达式，也叫 then 分支，就是整个条件表达式的结果；否则，第二个花括号内的表达式，也叫 else 分支，就会成为整个条件表达式的结果。
+
+像 `Bool` 这样可以通过列举所有取值来描述的类型，我们也可以自己定义。例如，我们可以定义硬币的正反面：
+
+```
+enum Coin {
+  head()
+  tail()
+}
+```
+
+然后就可以用 `TypeName::constructor()` 的方式构造相应的值。例如：
+
+```
+let first_coin : Coin = Coin::head()
+```
+
+没有歧义时，可以省略前面的类型名：
+
+```
+let second_coin : Coin = tail()
+```
+
+借助模式匹配，我们可以使用这些值：
+
+```
+match coin {
+  Coin::head() => println!("head")
+  tail() => println!("tail")
+}
+```
+
+枚举值也可以承载数据。例如，我们可以定义一个图形类型。一个图形可以是圆，也可以是矩形。如果是圆，我们需要用一个浮点数 `Double` 来描述它的半径；如果是矩形，我们需要用两个浮点数来描述它的长和宽：
+
+```
+enum Shape {
+  circle(Double)
+  rectangle(Double, Double)
+}
+```
+
+定义图形类型的值和前面一样，只需要在圆括号中填入它承载的数据：
+
+```
+let shape1 : Shape = circle(4.0)
+
+let shape2 : Shape = rectangle(2.0, 3.0)
+```
+
+我们可以写一个函数，用于求图形的面积：
+
+```
+fn surface(shape : Shape) -> Double {
+  match shape {
+    circle(r) => r * r * pi
+    rectangle(x, y) => x * y
+  }
+}
+```
+
+我们在后文才会介绍浮点数类型 `Double`、乘号 `*` 和圆周率 `pi` 是怎么来的，但这不妨碍我们理解这个程序。模式匹配会根据值的构造方式进入对应分支，并把值中携带的数据绑定到括号里的名字。例如，`circle(r)` 会把圆的半径绑定到 `r`，`rectangle(x, y)` 会把矩形的长和宽分别绑定到 `x` 和 `y`。
