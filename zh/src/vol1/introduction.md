@@ -259,7 +259,7 @@ let shape2 : Shape = rectangle(2.0, 3.0)
 我们可以写一个函数，用于求图形的面积：
 
 ```
-fn surface(shape : Shape) -> Double {
+fn area(shape : Shape) -> Double {
   match shape {
     circle(r) => r * r * pi
     rectangle(x, y) => x * y
@@ -268,3 +268,56 @@ fn surface(shape : Shape) -> Double {
 ```
 
 我们在后文才会介绍浮点数类型 `Double`、乘号 `*` 和圆周率 `pi` 是怎么来的，但这不妨碍我们理解这个程序。模式匹配会根据值的构造方式进入对应分支，并把值中携带的数据绑定到括号里的名字。例如，`circle(r)` 会把圆的半径绑定到 `r`，`rectangle(x, y)` 会把矩形的长和宽分别绑定到 `x` 和 `y`。
+
+## 结构体
+
+结构体是另一种自定义类型，它和枚举类型不同。
+
+有时，我们需要构造的数据类型只有一种形态，比如表示二维空间中的一个点：
+
+```
+enum Point {
+  point(Int, Int)
+}
+
+let p : Point = point(1, 2)
+```
+
+在这种情况下，更方便的做法是使用 Lane 语言的结构体。定义结构体的语法和定义枚举类型类似，只是字段的名字和类型都需要写出来；构造结构体字面量的语法也和构造枚举值类似，只是需要写出每个字段名，并在冒号后面写出对应的值：
+
+```
+struct Point {
+  x : Int
+  y : Int
+}
+
+let p : Point = Point::{ x: 1, y: 2 }
+```
+
+结构体的使用方式和枚举类型类似，也可以通过模式匹配来访问其字段：
+
+```
+fn squared_distance(p : Point) -> Int {
+  match p {
+    Point::{ x: first, y: second } => first * first + second * second
+  }
+}
+```
+
+当结构体的字段名和模式匹配中想要绑定的名字相同时，可以使用简写：
+
+```
+fn squared_distance(p : Point) -> Int {
+  match p {
+    Point::{ x, y } => x * x + y * y
+  }
+}
+```
+
+除了模式匹配，也可以直接通过点号访问结构体字段：
+
+```
+fn squared_distance(p : Point) -> Int {
+  p.x * p.x + p.y * p.y
+}
+```

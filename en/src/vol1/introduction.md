@@ -259,7 +259,7 @@ let shape2 : Shape = rectangle(2.0, 3.0)
 We can write a function that computes the area of a shape:
 
 ```
-fn surface(shape : Shape) -> Double {
+fn area(shape : Shape) -> Double {
   match shape {
     circle(r) => r * r * pi
     rectangle(x, y) => x * y
@@ -268,3 +268,56 @@ fn surface(shape : Shape) -> Double {
 ```
 
 We will introduce the floating-point type `Double`, the multiplication sign `*`, and the constant `pi` later, but that does not stop us from understanding this program. Pattern matching enters the branch corresponding to how the value was constructed and binds the data carried by the value to the names inside the parentheses. For example, `circle(r)` binds the circle's radius to `r`, and `rectangle(x, y)` binds the rectangle's length and width to `x` and `y`.
+
+## Structs
+
+A struct is another kind of user-defined type, different from an enum type.
+
+Sometimes the data type we need has only one shape, such as a point in two-dimensional space:
+
+```
+enum Point {
+  point(Int, Int)
+}
+
+let p : Point = point(1, 2)
+```
+
+In this situation, it is more convenient to use a Lane struct. The syntax for defining a struct is similar to the syntax for defining an enum type, except that both the name and the type of each field must be written out. The syntax for constructing a struct literal is also similar to the syntax for constructing an enum value, except that each field name must be written out, followed by the corresponding value after a colon:
+
+```
+struct Point {
+  x : Int
+  y : Int
+}
+
+let p : Point = Point::{ x: 1, y: 2 }
+```
+
+Structs are used in a way similar to enum types, and their fields can also be accessed through pattern matching:
+
+```
+fn squared_distance(p : Point) -> Int {
+  match p {
+    Point::{ x: first, y: second } => first * first + second * second
+  }
+}
+```
+
+When a struct field name is the same as the name we want to bind in the pattern, we can use shorthand syntax:
+
+```
+fn squared_distance(p : Point) -> Int {
+  match p {
+    Point::{ x, y } => x * x + y * y
+  }
+}
+```
+
+Besides pattern matching, struct fields can also be accessed directly with dot notation:
+
+```
+fn squared_distance(p : Point) -> Int {
+  p.x * p.x + p.y * p.y
+}
+```
