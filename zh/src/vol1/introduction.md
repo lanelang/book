@@ -392,3 +392,106 @@ fn print_length(list : List[Int]) -> Unit ! Io {
 ```
 
 上述程序会打印 `length is 3`。我们在第 1 行的函数定义中使用了 `[T]`，表示 `length` 是一个泛型函数，它可以接受任意元素类型的列表作为参数。无论列表中元素的类型是什么，`length` 函数都能正确计算出列表的长度。
+
+## 递归函数和高阶函数
+
+在打印列表长度的程序中，`length` 函数调用了自身，这样的函数就是递归函数。递归函数是指在函数体内直接或间接调用自身的函数。递归是一种常见的编程技巧，尤其适合处理具有递归结构的数据类型，例如列表和树。
+
+基本上，所有列表相关的操作都适合用递归函数实现。例如，我们可以定义一个函数，用于计算列表中所有整数的和：
+
+```
+fn sum(list : List[Int]) -> Int {
+  match list {
+    empty() => 0
+    cons(head, tail) => head + sum(tail)
+  }
+}
+```
+
+假设有一个列表 `[1, 2, 3]`，我们可以观察这个函数的计算过程：
+
+```
+  sum([1, 2, 3])
+= 1 + sum([2, 3])
+= 1 + (2 + sum([3]))
+= 1 + (2 + (3 + sum([])))
+= 1 + (2 + (3 + 0))
+= 6
+```
+
+列表有一种常见操作，叫作映射（map）。映射操作会对列表中的每个元素应用一个函数，并返回一个新的列表；新列表中包含原列表每个元素经过函数处理后的结果。例如，我们可以定义一个函数，将列表中的每个整数加倍：
+
+```
+fn double_list(list : List[Int]) -> List[Int] {
+  match list {
+    empty() => empty()
+    cons(head, tail) => cons(head * 2, double_list(tail))
+  }
+}
+```
+
+这个函数会返回一个新的列表，其中每个元素都是原列表中对应元素的两倍。例如，`double_list([1, 2, 3])` 会返回 `[2, 4, 6]`。
+
+假设我们有一个用于判断整数是否为偶数的函数：
+
+```
+fn is_even(n : Int) -> Bool {
+  n % 2 == 0
+}
+```
+
+我们可以定义一个函数，用于判断列表中每个元素是否为偶数：
+
+```
+fn is_even_list(list : List[Int]) -> List[Bool] {
+  match list {
+    empty() => empty()
+    cons(head, tail) => cons(is_even(head), is_even_list(tail))
+  }
+}
+```
+
+`is_even_list([1, 2, 3])` 会返回 `[false, true, false]`。
+
+可以看到，`double_list` 和 `is_even_list` 的结构非常相似。它们都使用递归和模式匹配来处理列表。为了避免重复代码，我们可以定义一个更通用的高阶函数 `map`，它接受一个函数和一个列表作为参数，并返回一个新的列表：
+
+```
+fn[T, U] map(f : (T) -> U, list : List[T]) -> List[U] {
+  match list {
+    empty() => empty()
+    cons(head, tail) => cons(f(head), map(f, tail))
+  }
+}
+```
+
+在这个函数中，`T` 和 `U` 是类型参数，分别表示输入列表的元素类型和输出列表的元素类型。`f` 是一个函数，它接受一个类型为 `T` 的参数，并返回一个类型为 `U` 的结果。`map` 函数会对列表中的每个元素应用函数 `f`，并返回一个新的列表。
+
+这种将函数作为参数传递的能力，使我们可以编写更通用、更可复用的代码。我们可以使用 `map` 函数来实现 `double_list` 和 `is_even_list`：
+
+```
+fn is_even_list(list : List[Int]) -> List[Bool] {
+  map(is_even, list)
+}
+```
+
+要实现 `double_list`，我们可以定义一个简单的函数 `double`，然后将其传递给 `map`：
+
+```
+fn double(n : Int) -> Int {
+  n * 2
+}
+
+fn double_list(list : List[Int]) -> List[Int] {
+  map(double, list)
+}
+```
+
+当然，由于 `double` 函数非常简单，我们也可以直接使用匿名函数：
+
+```
+fn double_list(list : List[Int]) -> List[Int] {
+  map(fn(n : Int) -> Int { n * 2 }, list)
+}
+```
+
+匿名函数本身也是一种表达式，它可以在需要函数的地方直接使用，而不必先为它命名。通常情况下，我们会在需要把函数作为参数传递时使用匿名函数，这样可以减少命名开销，并使代码更加简洁。当然，既然匿名函数是普通表达式，它也可以被绑定到一个名字上，以便在其他地方使用，或者作为返回值返回。

@@ -392,3 +392,106 @@ fn print_length(list : List[Int]) -> Unit ! Io {
 ```
 
 The program above prints `length is 3`. We use `[T]` in the function definition on line 1, which means `length` is a generic function. It can accept a list with any element type as its argument. No matter what the element type of the list is, the `length` function can correctly compute the length of the list.
+
+## Recursive Functions and Higher-Order Functions
+
+In the program that prints the length of a list, the `length` function calls itself. Such a function is a recursive function. A recursive function is a function that directly or indirectly calls itself in its function body. Recursion is a common programming technique, especially suitable for processing data types with recursive structure, such as lists and trees.
+
+Basically, all list-related operations are suitable for implementation with recursive functions. For example, we can define a function that computes the sum of all integers in a list:
+
+```
+fn sum(list : List[Int]) -> Int {
+  match list {
+    empty() => 0
+    cons(head, tail) => head + sum(tail)
+  }
+}
+```
+
+Suppose we have a list `[1, 2, 3]`. We can observe the computation process of this function:
+
+```
+  sum([1, 2, 3])
+= 1 + sum([2, 3])
+= 1 + (2 + sum([3]))
+= 1 + (2 + (3 + sum([])))
+= 1 + (2 + (3 + 0))
+= 6
+```
+
+Lists have a common operation called mapping, or map. A mapping operation applies a function to each element in a list and returns a new list; the new list contains the result of applying the function to each corresponding element in the original list. For example, we can define a function that doubles every integer in a list:
+
+```
+fn double_list(list : List[Int]) -> List[Int] {
+  match list {
+    empty() => empty()
+    cons(head, tail) => cons(head * 2, double_list(tail))
+  }
+}
+```
+
+This function returns a new list where each element is twice the corresponding element in the original list. For example, `double_list([1, 2, 3])` returns `[2, 4, 6]`.
+
+Suppose we have a function for checking whether an integer is even:
+
+```
+fn is_even(n : Int) -> Bool {
+  n % 2 == 0
+}
+```
+
+We can define a function that checks whether each element in a list is even:
+
+```
+fn is_even_list(list : List[Int]) -> List[Bool] {
+  match list {
+    empty() => empty()
+    cons(head, tail) => cons(is_even(head), is_even_list(tail))
+  }
+}
+```
+
+`is_even_list([1, 2, 3])` returns `[false, true, false]`.
+
+As we can see, `double_list` and `is_even_list` have very similar structures. They both use recursion and pattern matching to process lists. To avoid repeated code, we can define a more general higher-order function `map`, which accepts a function and a list as parameters and returns a new list:
+
+```
+fn[T, U] map(f : (T) -> U, list : List[T]) -> List[U] {
+  match list {
+    empty() => empty()
+    cons(head, tail) => cons(f(head), map(f, tail))
+  }
+}
+```
+
+In this function, `T` and `U` are type parameters. They represent the element type of the input list and the element type of the output list, respectively. `f` is a function that accepts a parameter of type `T` and returns a result of type `U`. The `map` function applies `f` to each element in the list and returns a new list.
+
+This ability to pass functions as arguments lets us write more general and more reusable code. We can use `map` to implement `double_list` and `is_even_list`:
+
+```
+fn is_even_list(list : List[Int]) -> List[Bool] {
+  map(is_even, list)
+}
+```
+
+To implement `double_list`, we can define a simple function `double` and pass it to `map`:
+
+```
+fn double(n : Int) -> Int {
+  n * 2
+}
+
+fn double_list(list : List[Int]) -> List[Int] {
+  map(double, list)
+}
+```
+
+Of course, since the `double` function is very simple, we can also use an anonymous function directly:
+
+```
+fn double_list(list : List[Int]) -> List[Int] {
+  map(fn(n : Int) -> Int { n * 2 }, list)
+}
+```
+
+An anonymous function is itself an expression. It can be used directly wherever a function is needed, without first giving it a name. Usually, we use anonymous functions when we need to pass a function as an argument. This reduces the cost of naming and makes the code more concise. Of course, because an anonymous function is an ordinary expression, it can also be bound to a name for use elsewhere, or returned as a return value.
