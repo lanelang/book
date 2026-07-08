@@ -391,7 +391,7 @@ fn print_length(list : List[Int]) -> Unit ! Io {
 }
 ```
 
-The program above prints `length is 3`. We use `[T]` in the function definition on line 1, which means `length` is a generic function. It can accept a list with any element type as its argument. No matter what the element type of the list is, the `length` function can correctly compute the length of the list.
+The program above prints `length is 3`. We use `[T]` in the function definition on line 1, which means `length` is a generic function. It can accept a list with any element type as its argument. No matter what the element type of the list is, the `length` function can correctly compute the length of the list. This lets us use the same function to compute the length of lists with different element types, without writing a new function for each type.
 
 ## Recursive Functions and Higher-Order Functions
 
