@@ -107,7 +107,7 @@ pub fn print_sum() -> Unit ! Io {
 
 第 4 行绑定中 `=` 的右手侧是一个内置函数。我们暂时不用关心这个函数的细节，只需要知道，想要在 Lane 语言内部为整数类型实现加法运算非常麻烦；通过内置函数的方式，我们可以把这种函数交给编译器处理，由编译器为我们实现正确的运算。
 
-Lane 的 `Int` 类型是 64 位整数，这意味着它的取值范围在 -2^63 到 2^63-1 之间。一般情况下，我们不会用到那么大的数字。除了 `Int`，Lane 还有其他几种内置类型：`Bool`、`String` 和 `Unit`。
+Lane 的 `Int` 类型是 64 位整数，这意味着它的取值范围在 -2^63 到 2^63-1 之间。一般情况下，我们不会用到那么大的数字。除了 `Int`，Lane 还有其他内置类型，例如 `Bool`、`String` 和 `Unit`。
 
 我们可以稍微修改上述程序的第 6 行：
 
@@ -321,3 +321,74 @@ fn squared_distance(p : Point) -> Int {
   p.x * p.x + p.y * p.y
 }
 ```
+
+## 列表和泛型
+
+Lane 语言还支持一种特殊的类型及其对应的字面量：列表。列表是一个有序的元素集合，所有元素的类型必须相同。我们可以用方括号 `[]` 表示列表字面量，列表中的元素用逗号 `,` 分隔。例如：
+
+```
+let int_list : List[Int] = [1, 2, 3]
+
+let bool_list : List[Bool] = [true, false, true]
+```
+
+可以看到，列表类型 `List` 本身并不是一个具体的类型，而是一个泛型类型。`List[Int]` 表示元素类型为 `Int` 的列表，`List[Bool]` 表示元素类型为 `Bool` 的列表。我们可以用 `List[T]` 表示元素类型为某个类型 `T` 的列表。
+
+自定义的枚举和结构体也可以是这样的泛型类型。例如，我们可以定义一个泛型二叉树类型：
+
+```
+enum Tree[T] {
+  leaf(T)
+  node(Tree[T], Tree[T])
+}
+```
+
+也可以定义一个简单的装箱类型：
+
+```
+struct Box[T] {
+  value : T
+}
+```
+
+我们可以这样理解这个类型：「对于任意类型 `T`，`Box[T]` 表示一个装箱，它承载的值的类型是 `T`。」
+
+因此，我们可以在 `Box[T]` 类型的箱子中放入任意类型的值：
+
+```
+let int_box : Box[Int] = Box::{ value: 42 }
+
+let bool_box : Box[Bool] = Box::{ value: true }
+```
+
+事实上，列表正是 `Basic.Data.List` 模块中定义的一个泛型枚举类型：
+
+```
+module Basic.Data.List
+
+enum List[T] {
+  empty()
+  cons(T, List[T])
+}
+```
+
+用方括号表示的列表字面量 `[1, 2, 3]`，实际上是 `cons(1, cons(2, cons(3, empty())))` 的简写形式。
+
+除了结构体和枚举，函数也可以是泛型的。例如，我们可以定义一个函数，让它接受一个列表，并返回该列表的长度：
+
+```
+fn[T] length(list : List[T]) -> Int {
+  match list {
+    empty() => 0
+    cons(_, tail) => 1 + length(tail)
+  }
+}
+
+let int_list : List[Int] = [1, 2, 3]
+
+fn print_length(list : List[Int]) -> Unit ! Io {
+  println!("length is " + to_string(length(list)))
+}
+```
+
+上述程序会打印 `length is 3`。我们在第 1 行的函数定义中使用了 `[T]`，表示 `length` 是一个泛型函数，它可以接受任意元素类型的列表作为参数。无论列表中元素的类型是什么，`length` 函数都能正确计算出列表的长度。

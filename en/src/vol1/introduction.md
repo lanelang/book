@@ -107,7 +107,7 @@ Line 4 binds the builtin function `builtin("%i64_add")` to the name `add`. Here,
 
 The right-hand side of the binding on line 4 is a builtin function. For now, we do not need to care about the details of this function. We only need to know that implementing integer addition inside the Lane language itself would be very troublesome; by using a builtin function, we can hand this function to the compiler, and the compiler will implement the correct operation for us.
 
-Lane's `Int` type is a 64-bit integer, which means its range is from -2^63 to 2^63-1. In general, we will not need numbers that large. Besides `Int`, Lane has several other builtin types: `Bool`, `String`, and `Unit`.
+Lane's `Int` type is a 64-bit integer, which means its range is from -2^63 to 2^63-1. In general, we will not need numbers that large. Besides `Int`, Lane has other builtin types, such as `Bool`, `String`, and `Unit`.
 
 We can slightly modify line 6 of the program above:
 
@@ -321,3 +321,74 @@ fn squared_distance(p : Point) -> Int {
   p.x * p.x + p.y * p.y
 }
 ```
+
+## Lists and Generics
+
+Lane also supports a special type and its corresponding literal syntax: lists. A list is an ordered collection of elements, and all elements must have the same type. We can use square brackets `[]` to write list literals, with elements separated by commas `,`. For example:
+
+```
+let int_list : List[Int] = [1, 2, 3]
+
+let bool_list : List[Bool] = [true, false, true]
+```
+
+As we can see, the list type `List` itself is not a concrete type, but a generic type. `List[Int]` means a list whose element type is `Int`, and `List[Bool]` means a list whose element type is `Bool`. We can use `List[T]` to mean a list whose element type is some type `T`.
+
+User-defined enums and structs can also be generic types like this. For example, we can define a generic binary tree type:
+
+```
+enum Tree[T] {
+  leaf(T)
+  node(Tree[T], Tree[T])
+}
+```
+
+We can also define a simple boxed type:
+
+```
+struct Box[T] {
+  value : T
+}
+```
+
+We can understand this type as follows: for any type `T`, `Box[T]` represents a box whose carried value has type `T`.
+
+Therefore, we can put values of any type into a box of type `Box[T]`:
+
+```
+let int_box : Box[Int] = Box::{ value: 42 }
+
+let bool_box : Box[Bool] = Box::{ value: true }
+```
+
+In fact, lists are defined as a generic enum type in the `Basic.Data.List` module:
+
+```
+module Basic.Data.List
+
+enum List[T] {
+  empty()
+  cons(T, List[T])
+}
+```
+
+The list literal `[1, 2, 3]` written with square brackets is actually shorthand for `cons(1, cons(2, cons(3, empty())))`.
+
+Besides structs and enums, functions can also be generic. For example, we can define a function that accepts a list and returns its length:
+
+```
+fn[T] length(list : List[T]) -> Int {
+  match list {
+    empty() => 0
+    cons(_, tail) => 1 + length(tail)
+  }
+}
+
+let int_list : List[Int] = [1, 2, 3]
+
+fn print_length(list : List[Int]) -> Unit ! Io {
+  println!("length is " + to_string(length(list)))
+}
+```
+
+The program above prints `length is 3`. We use `[T]` in the function definition on line 1, which means `length` is a generic function. It can accept a list with any element type as its argument. No matter what the element type of the list is, the `length` function can correctly compute the length of the list.
