@@ -495,3 +495,85 @@ fn double_list(list : List[Int]) -> List[Int] {
 ```
 
 An anonymous function is itself an expression. It can be used directly wherever a function is needed, without first giving it a name. Usually, we use anonymous functions when we need to pass a function as an argument. This reduces the cost of naming and makes the code more concise. Of course, because an anonymous function is an ordinary expression, it can also be bound to a name for use elsewhere, or returned as a return value.
+
+## Contextual Lookup and Operator Overloading
+
+We finally have a chance to uncover the mystery behind the addition operator `+`. Earlier, we used `+` to compute the sum of integers, and we also used `+` to concatenate strings and compute the sum of floating-point numbers. With the previous introduction to generics, we can understand `+` as a generic function: its parameter types and return type all depend on the types of the arguments. Its declaration might roughly look like this:
+
+```
+fn[T] +(a : T, b : T) -> T { ... }
+```
+
+Of course, this is not legal Lane syntax. In Lane, `+` is not an ordinary function name; the compiler resolves it as a call to the `op_add` function. The real declaration of `op_add` is roughly like this:
+
+```
+module Basic.Ops
+
+import Basic.Builtins.*
+
+pub fn[T] op_add(a : T, b : T, auto op : Add[T]) -> T {
+  op.add(a, b)
+}
+
+pub offer int_add_ops : Add[Int] = Add::{ add: int_add }
+```
+
+In other words, `op_add` calls the `add` field in its third parameter `op` to perform the real addition. Ignoring the new keywords `auto` and `offer` for now, we can see that `op_add` has an extra parameter `op`, whose type is `Add[T]`. That type is defined as follows:
+
+```
+module Basic.Ops
+
+struct Add[T] {
+  add : (T, T) -> T
+}
+```
+
+It is only a wrapper around a function type. In other words, the third parameter of `op_add` is not the function itself, but a struct value containing an `add` field; that `add` field is the function, which accepts two parameters of type `T` and returns a result of type `T`.
+
+The key is that, in the same context where `op_add` is called, there must be a value of type `Add[T]`. This value is automatically passed as the third parameter of `op_add`. For integer addition, the function that performs the actual computation is the builtin function in the `Basic.Builtins` module:
+
+```
+module Basic.Builtins
+
+pub let int_add : (Int, Int) -> Int = builtin("%i64_add")
+```
+
+This `builtin("%i64_add")` is the builtin function we mentioned earlier. Then the `Basic.Ops` module wraps it into a value of type `Add[Int]`:
+
+```
+module Basic.Ops
+
+pub offer int_add_ops : Add[Int] = Add::{ add: int_add }
+```
+
+The `int_add_ops` binding is not declared with `let`, but with `offer`. A binding declared with `offer` enters a "candidate context". When a function declares an "automatic parameter" with `auto`, callers do not need to pass that parameter explicitly; instead, the compiler can look in the candidate context for a candidate value with a matching type.
+
+That is, when we call `op_add` in some context, which is what happens when we use the `+` operator, if that context contains a value of type `Add[T]`, then this value is automatically passed as the third parameter of `op_add`. In the usual case, as long as we import the relevant bindings from the `Basic.Ops` module, `int_add_ops` enters the candidate context, allowing addition for integers to work normally.
+
+With this mechanism, addition for the `Double` type can be implemented in a similar way. As long as the `Basic.Builtins` module defines a builtin function `double_add`, and the `Basic.Ops` module provides a `double_add_ops` binding, the `+` operator can support addition for floating-point numbers.
+
+Review this once more. When we use the `+` operator in a program:
+
+```
+fn add_numbers(a : Int, b : Int) -> Int {
+  a + b
+}
+```
+
+The compiler treats it as a call to `op_add`:
+
+```
+fn add_numbers(a : Int, b : Int) -> Int {
+  op_add(a, b)
+}
+```
+
+The `op_add` function has an implicit parameter `op`, whose type is `Add[Int]`. The compiler looks in the current context for a value of type `Add[Int]`. If it finds one, it passes that value as the third parameter of `op_add`, completing integer addition.
+
+```
+fn add_numbers(a : Int, b : Int) -> Int {
+  op_add(a, b, op=int_add_ops)
+}
+```
+
+When we use the `+` operator to concatenate strings, the compiler looks for a value of type `Add[String]`, thereby completing string concatenation. It looks as if the behavior of `op_add` changes depending on the types of the arguments, but in fact these are two different calls whose automatically filled arguments are not the same. This feature is called contextual lookup. It allows us to provide different default implementations for the same function in different contexts. With contextual lookup, operator overloading is easy to implement: the same operator can have different behavior on operands of different types.
