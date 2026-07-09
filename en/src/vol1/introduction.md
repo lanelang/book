@@ -23,7 +23,7 @@ pub fn hello() -> Unit ! Io {
 How to run this program depends on the context. In a Unix environment with the lane tool installed, suppose we save the text above as `hello.lane`. The content of that file is the program's source code. Run the following command:
 
 ```
-lane run hello.lane:hello --lib-dir $LANE_BASIC
+lane run hello.lane:hello --lib-dir $LANE_HOME/basic
 ```
 
 This runs the program and prints the following output in the terminal:
@@ -32,7 +32,7 @@ This runs the program and prints the following output in the terminal:
 hello, world
 ```
 
-The command entered in the terminal also shows that we need to pass the `$LANE_BASIC` environment variable, which points to the Basic library directory. In general, installing the toolchain may also install the Basic library to a default path and set the `$LANE_BASIC` environment variable to that path. Basic is only a convention in Lane, not a standard library or a privileged language component. Therefore, it is normal to fail to find the correct `$LANE_BASIC` or Basic library files. To avoid that, we can write another file named `io.lane` in the current directory:
+The command entered in the terminal also shows that we need to pass the directory that contains the Basic library. In general, installing the toolchain will ask us to set the `$LANE_HOME` environment variable to a suitable location, and the Basic library is installed under `$LANE_HOME/basic` by default. Basic is the standard library of the Lane language, but the library itself has no special privileges. Therefore, we can also write another file named `io.lane` in the current directory and use it to temporarily provide the standard library content we need:
 
 ```
 module Basic.Io
@@ -84,9 +84,9 @@ module Integer
 
 let add : (Int, Int) -> Int = builtin("%i64_add")
 
-let sum : Int = add(1, 2)
-
 import Basic.Io.*
+
+let sum : Int = add(1, 2)
 
 pub fn print_sum() -> Unit ! Io {
   println!("sum is " + to_string(sum))
@@ -577,3 +577,5 @@ fn add_numbers(a : Int, b : Int) -> Int {
 ```
 
 When we use the `+` operator to concatenate strings, the compiler looks for a value of type `Add[String]`, thereby completing string concatenation. It looks as if the behavior of `op_add` changes depending on the types of the arguments, but in fact these are two different calls whose automatically filled arguments are not the same. This feature is called Contextual Resolution. It allows us to provide different default implementations for the same function in different contexts. With Contextual Resolution, operator overloading is easy to implement: the same operator can have different behavior on operands of different types.
+
+## Input/Output and Effects

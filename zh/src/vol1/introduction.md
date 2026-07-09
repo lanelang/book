@@ -23,7 +23,7 @@ pub fn hello() -> Unit ! Io {
 如何运行这个程序取决于具体场景。在安装了 lane 工具的 Unix 环境中，假设我们将上述文本保存为 `hello.lane` 文件，文件内容就叫作程序的源代码。使用如下命令：
 
 ```
-lane run hello.lane:hello --lib-dir $LANE_BASIC
+lane run hello.lane:hello --lib-dir $LANE_HOME/basic
 ```
 
 即可运行该程序，并在终端中看到如下信息：
@@ -32,7 +32,7 @@ lane run hello.lane:hello --lib-dir $LANE_BASIC
 hello, world
 ```
 
-从输入到终端的命令中也能看出，我们需要手动传入一个指向 Basic 基础库目录的环境变量 `$LANE_BASIC`。一般来说，安装工具链时可以同时把 Basic 基础库安装到默认路径，并将环境变量 `$LANE_BASIC` 设置为该路径。Basic 只是 Lane 语言中的约定，不是标准库，也不是拥有特权的语言组件。因此，找不到正确的 `$LANE_BASIC` 或 Basic 基础库文件也是很正常的事情。为此，我们可以在当前目录编写另一个文件 `io.lane`，内容如下：
+从输入到终端的命令中也能看出，我们需要手动传入 Basic 基础库所在的目录。一般来说，安装工具链时会提示把环境变量 `$LANE_HOME` 设置为合适的位置，而 Basic 基础库默认安装在 `$LANE_HOME/basic` 路径下。Basic 是 Lane 语言的标准库，但这个库本身并没有任何特殊权限。因此，我们也可以在当前目录编写另一个文件 `io.lane`，用它临时提供所需的标准库内容，如下：
 
 ```
 module Basic.Io
@@ -84,9 +84,9 @@ module Integer
 
 let add : (Int, Int) -> Int = builtin("%i64_add")
 
-let sum : Int = add(1, 2)
-
 import Basic.Io.*
+
+let sum : Int = add(1, 2)
 
 pub fn print_sum() -> Unit ! Io {
   println!("sum is " + to_string(sum))
@@ -577,3 +577,5 @@ fn add_numbers(a : Int, b : Int) -> Int {
 ```
 
 而当我们使用 `+` 运算符来拼接字符串时，编译器会查找类型为 `Add[String]` 的值，从而完成字符串拼接操作。看起来 `op_add` 的行为会根据传入参数的类型而有所不同，但事实上这是两个不同的调用，它们自动补全的参数并不相同。这个特性叫作「上下文解析」（Contextual Resolution），它允许我们在不同上下文中为同一个函数提供不同的默认实现。借助上下文解析，运算符重载就很容易实现：同一个运算符可以在不同类型的操作数上表现出不同的行为。
+
+## 输入/输出和效应
