@@ -496,7 +496,7 @@ fn double_list(list : List[Int]) -> List[Int] {
 
 An anonymous function is itself an expression. It can be used directly wherever a function is needed, without first giving it a name. Usually, we use anonymous functions when we need to pass a function as an argument. This reduces the cost of naming and makes the code more concise. Of course, because an anonymous function is an ordinary expression, it can also be bound to a name for use elsewhere, or returned as a return value.
 
-## Contextual Lookup and Operator Overloading
+## Contextual Resolution and Operator Overloading
 
 We finally have a chance to uncover the mystery behind the addition operator `+`. Earlier, we used `+` to compute the sum of integers, and we also used `+` to concatenate strings and compute the sum of floating-point numbers. With the previous introduction to generics, we can understand `+` as a generic function: its parameter types and return type all depend on the types of the arguments. Its declaration might roughly look like this:
 
@@ -576,4 +576,4 @@ fn add_numbers(a : Int, b : Int) -> Int {
 }
 ```
 
-When we use the `+` operator to concatenate strings, the compiler looks for a value of type `Add[String]`, thereby completing string concatenation. It looks as if the behavior of `op_add` changes depending on the types of the arguments, but in fact these are two different calls whose automatically filled arguments are not the same. This feature is called contextual lookup. It allows us to provide different default implementations for the same function in different contexts. With contextual lookup, operator overloading is easy to implement: the same operator can have different behavior on operands of different types.
+When we use the `+` operator to concatenate strings, the compiler looks for a value of type `Add[String]`, thereby completing string concatenation. It looks as if the behavior of `op_add` changes depending on the types of the arguments, but in fact these are two different calls whose automatically filled arguments are not the same. This feature is called Contextual Resolution. It allows us to provide different default implementations for the same function in different contexts. With Contextual Resolution, operator overloading is easy to implement: the same operator can have different behavior on operands of different types.
