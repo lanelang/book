@@ -133,9 +133,9 @@ Bindings can be written at the top level of a file, but they are more commonly w
 // scope.lane
 module Scope
 
-let add : (Int, Int) -> Int = builtin("%i64_add")
-
 import Basic.Io.*
+
+let add : (Int, Int) -> Int = builtin("%i64_add")
 
 pub fn print_sum() -> Unit ! Io {
   let sum = add(1, 2)
