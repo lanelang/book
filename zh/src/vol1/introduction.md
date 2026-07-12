@@ -32,14 +32,18 @@ lane run hello.lane:hello --lib-dir $LANE_HOME/basic
 hello, world
 ```
 
-从输入到终端的命令中也能看出，我们需要手动传入 Basic 基础库所在的目录。一般来说，安装工具链时会提示把环境变量 `$LANE_HOME` 设置为合适的位置，而 Basic 基础库默认安装在 `$LANE_HOME/basic` 路径下。Basic 是 Lane 语言的标准库，但这个库本身并没有任何特殊权限。因此，我们也可以在当前目录编写另一个文件 `io.lane`，用它临时提供所需的标准库内容，如下：
+从刚才在终端中输入的命令也能看出，我们需要手动传入 Basic 库所在的目录。一般来说，安装工具链时会提示把环境变量 `$LANE_HOME` 设置为合适的位置，而 Basic 库默认安装在 `$LANE_HOME/basic` 路径下。Basic 是 Lane 语言的标准库，但这个库本身并没有任何特殊权限。因此，我们也可以在当前目录编写另一个文件 `io.lane`，用它临时提供所需的标准库内容，如下：
 
 ```
 module Basic.Io
 
-pub effect Io {
-  println(String) -> Unit
-}
+pub type Io = { Console }
+
+pub type Console = { Write }
+
+pub effect Effect {}
+
+pub let println : (String) -> Unit ! Effect = builtin("%println")
 ```
 
 然后执行如下命令：
@@ -48,9 +52,9 @@ pub effect Io {
 lane run hello.lane:hello --lib io.lane
 ```
 
-就能够正常打印。
+即可正常打印。
 
-相对而言，在 playground 网页上完成这个任务要容易得多。网页中内置了一些必要的 Basic 基础库文件，包括我们需要用到的 `io.lane`。理想情况下，当 hello 程序的代码输入完毕后，输出框就能呈现如下信息：
+相比之下，在 playground 网页上完成这个任务要容易得多。网页中内置了运行示例所需的 Basic 库文件，包括我们需要用到的 `io.lane`。理想情况下，当 hello 程序的代码输入完毕后，输出框就能呈现如下信息：
 
 ```
 hello, world
@@ -64,8 +68,8 @@ hello, world
   - 其中，第 5 行开头声明了这个函数的可见性：`pub` 表示函数可以被外部访问，例如被 `lane run` 命令或其他模块访问。
   - `fn` 是声明函数的关键字，后面的 `hello` 是函数的名字。
   - 函数名后的括号是函数的参数列表。`hello` 函数没有参数，因此括号内是空的。
-  - 箭头 `->` 后面是函数的返回值类型，`Unit ! Io` 表示函数返回一个 `Unit` 类型的结果以及产生一个 `Io` 类型的效应。
-- 第 6 行的函数体被大括号包裹，函数体内只有一个表达式。这个唯一的表达式使用 `println` 操作产生了一个 `Io` 效应。
+  - 箭头 `->` 后面是函数的返回值类型，`Unit ! Io` 表示函数返回一个 `Unit` 类型的结果，并声明可能产生 `Io` 效应。
+- 第 6 行的函数体被大括号包裹，函数体内只有一个表达式。这个唯一的表达式调用 `println`，将字符串输出到终端。
 - 用双引号 `"` 包裹的部分是字符串。
 
 这里出现的诸多概念，包括模块、字符串、函数、可见性、类型、效应等，在正文章节都会进行详细解释。
@@ -82,9 +86,9 @@ hello, world
 // integer.lane
 module Integer
 
-let add : (Int, Int) -> Int = builtin("%i64_add")
-
 import Basic.Io.*
+
+let add : (Int, Int) -> Int = builtin("%i64_add")
 
 let sum : Int = add(1, 2)
 

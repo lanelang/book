@@ -32,14 +32,18 @@ This runs the program and prints the following output in the terminal:
 hello, world
 ```
 
-The command entered in the terminal also shows that we need to pass the directory that contains the Basic library. In general, installing the toolchain will ask us to set the `$LANE_HOME` environment variable to a suitable location, and the Basic library is installed under `$LANE_HOME/basic` by default. Basic is the standard library of the Lane language, but the library itself has no special privileges. Therefore, we can also write another file named `io.lane` in the current directory and use it to temporarily provide the standard library content we need:
+The command we just entered in the terminal also shows that we need to pass the directory that contains the Basic library. In general, installing the toolchain will ask us to set the `$LANE_HOME` environment variable to a suitable location, and the Basic library is installed under `$LANE_HOME/basic` by default. Basic is the standard library of the Lane language, but the library itself has no special privileges. Therefore, we can also write another file named `io.lane` in the current directory and use it to temporarily provide the standard library content we need:
 
 ```
 module Basic.Io
 
-pub effect Io {
-  println(String) -> Unit
-}
+pub type Io = { Console }
+
+pub type Console = { Write }
+
+pub effect Effect {}
+
+pub let println : (String) -> Unit ! Effect = builtin("%println")
 ```
 
 Then run:
@@ -48,9 +52,9 @@ Then run:
 lane run hello.lane:hello --lib io.lane
 ```
 
-This prints normally.
+This prints the expected output.
 
-By comparison, completing this task in the playground is much easier. The web page includes several necessary Basic library files, including the `io.lane` file we need. Ideally, after the hello program has been entered, the output box will show:
+By comparison, completing this task in the playground is much easier. The web page includes the Basic library files needed to run the example, including the `io.lane` file we need. Ideally, after the hello program has been entered, the output box will show:
 
 ```
 hello, world
@@ -64,8 +68,8 @@ It is worth explaining the command and program text we used.
   - At the beginning of line 5, `pub` declares the function's visibility. It means the function can be accessed externally, for example by the `lane run` command or by other modules.
   - `fn` is the keyword for declaring a function, and `hello` after it is the function's name.
   - The parentheses after the function name are the function's parameter list. The `hello` function has no parameters, so the parentheses are empty.
-  - After the arrow `->` is the function's return type. `Unit ! Io` means the function returns a value of type `Unit` and produces an effect of type `Io`.
-- The function body on line 6 is enclosed in braces, and it contains only one expression. That expression uses the `println` operation to produce an `Io` effect.
+  - After the arrow `->` is the function's return type. `Unit ! Io` means the function returns a value of type `Unit` and declares that it may produce an `Io` effect.
+- The function body on line 6 is enclosed in braces, and it contains only one expression. That expression calls `println` to print the string to the terminal.
 - The part enclosed in double quotes `"` is a string.
 
 The concepts that appear here, including modules, strings, functions, visibility, types, and effects, are explained in detail in the main chapters.
@@ -82,9 +86,9 @@ With Lane's builtin integer type and builtin functions, we can use Lane to do so
 // integer.lane
 module Integer
 
-let add : (Int, Int) -> Int = builtin("%i64_add")
-
 import Basic.Io.*
+
+let add : (Int, Int) -> Int = builtin("%i64_add")
 
 let sum : Int = add(1, 2)
 
