@@ -41,9 +41,9 @@ pub type Io = { Console }
 
 pub type Console = { Write }
 
-pub effect Effect {}
+pub effect Write {}
 
-pub let println : (String) -> Unit ! Effect = builtin("%println")
+pub let println : (String) -> Unit ! Write = builtin("%println")
 ```
 
 Then run:
@@ -583,3 +583,98 @@ fn add_numbers(a : Int, b : Int) -> Int {
 When we use the `+` operator to concatenate strings, the compiler looks for a value of type `Add[String]`, thereby completing string concatenation. It looks as if the behavior of `op_add` changes depending on the types of the arguments, but in fact these are two different calls whose automatically filled arguments are not the same. This feature is called Contextual Resolution. It allows us to provide different default implementations for the same function in different contexts. With Contextual Resolution, operator overloading is easy to implement: the same operator can have different behavior on operands of different types.
 
 ## Input/Output and Effects
+
+In the first program that printed a string, we defined the `println` function like this:
+
+```
+pub let println : (String) -> Unit ! Write = builtin("%println")
+```
+
+This function likewise uses a builtin function, `%println`. Unlike other builtin functions, the return portion of its type signature carries `! Write`, which indicates that `println` produces a `Write` effect while returning `Unit`. Lane functions are pure: the same input always produces the same output. However, a function such as `println` produces a side effect by changing the content of the external console, so it cannot be described by an ordinary type. Lane provides effects to manage side effects in programs.
+
+The Lane runtime that executes Lane programs handles the `Write` effect. In addition to `Write`, the standard runtime provides several effects, including `Read`, `Process`, and `Random`. These effects are ultimately combined by the type `Io`. In other words, the runtime can handle every effect in `Basic.Io.Io`.
+
+What about other effects? In Lane, users can define effects just as they define custom types:
+
+```
+effect Exception {
+  raise(String) -> Unit
+}
+```
+
+This defines an exception effect, one of the most typical uses of effects. When a program reaches a situation that it cannot handle normally, it can raise an exception and let the program that calls it handle the exceptional situation. For example, we have a function `first` that takes the first element from a list. Its return type is the list's element type. What should it return if the list contains no elements? We can use the following enum type to express the return type:
+
+```
+enum Option[T] {
+  some(T)
+  none()
+}
+```
+
+But we can also let the function produce an `Exception` effect:
+
+```
+fn[T] first(ls : List[T]) -> T ! Exception {
+  match ls {
+    empty() => raise!("no elements in the list")
+    some(head, tail) => head
+  }
+}
+```
+
+The syntax for producing an effect is `operation!(arguments)`. The `operation` can be a branch defined in a custom effect or a function that produces an effect. Just as `some` can be viewed as a function of type `(T) -> Option[T]`, `raise` can be viewed as a function of type `(String) -> Unit ! Exception`. When an effect appears in an expression, the whole expression must either pass the effect outward, for example in a function signature, or handle it with a `handle-with` expression.
+
+In the example above, the `first` function produces the `raise` effect without handling it, so executing the function also produces, or more precisely may produce, an `Exception` effect. We can handle this effect at the call site. Handling an effect is similar to pattern matching on an enum value: different effect operations enter different branches. Because `Exception` has only one operation, `raise`, there is only one branch:
+
+```
+fn print_first_integer() -> Unit ! Console {
+  let list = [1, 2, 3, 4]
+  handle first!(list) with {
+    raise(msg, _resume) => println!("got exception: " + msg)
+  } final v {
+    println!("first integer is: " + to_string(v))
+  }
+}
+```
+
+Notice two new things: the `raise` pattern has a second, unused parameter, `resume`; and in addition to using the `with` block to match every operation of type `Exception`, we need `final` as a fallback for when the function call returns normally. For example, calling the function above prints `first integer is: 1`. That is, the `1` returned normally by `first([1, 2, 3, 4])` is bound to the name `v` in the final block.
+
+The following program expresses this logic: when calling `first` encounters `raise`, use 0 as the default result of the call.
+
+```
+handle first!(list) with {
+  raise(_msg, _resume) => 0
+} final v {
+  v
+}
+```
+
+However, the logic for handling an effect is often not in the same program as the code that produces the effect. For example, a huge program may call `first` after many layers of nesting, but `first` does not know how its caller intends to handle the effect. We can suppose the following situation:
+
+```
+handle {
+  ...
+  let fst = first!(some_list)
+  ...
+} with {
+  ...
+} final v {
+  ...
+}
+```
+
+The effectful `first` function is only one line in a program with tens of millions of lines. Here, we want 0 to be bound to `fst` when `first` raises an exception, rather than having the whole expression evaluate to 0. We can use `resume` to do this:
+
+```
+handle {
+  ...
+  let fst = first!(some_list)
+  ...
+} with {
+  raise(_msg, resume) => resume(0)
+} final v {
+  ...
+}
+```
+
+`resume` is a function that represents the continuation of the program at the call to `first`. When `resume(0)` is called, the program returns to where `first` was executed, fills the `first!(some_list)` expression with the value `0`, and continues running the rest of the program.

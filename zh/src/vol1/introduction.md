@@ -41,9 +41,9 @@ pub type Io = { Console }
 
 pub type Console = { Write }
 
-pub effect Effect {}
+pub effect Write {}
 
-pub let println : (String) -> Unit ! Effect = builtin("%println")
+pub let println : (String) -> Unit ! Write = builtin("%println")
 ```
 
 然后执行如下命令：
@@ -583,3 +583,98 @@ fn add_numbers(a : Int, b : Int) -> Int {
 而当我们使用 `+` 运算符来拼接字符串时，编译器会查找类型为 `Add[String]` 的值，从而完成字符串拼接操作。看起来 `op_add` 的行为会根据传入参数的类型而有所不同，但事实上这是两个不同的调用，它们自动补全的参数并不相同。这个特性叫作「上下文解析」（Contextual Resolution），它允许我们在不同上下文中为同一个函数提供不同的默认实现。借助上下文解析，运算符重载就很容易实现：同一个运算符可以在不同类型的操作数上表现出不同的行为。
 
 ## 输入/输出和效应
+
+我们在最早的输出字符串程序中是这样定义 `println` 函数的：
+
+```
+pub let println : (String) -> Unit ! Write = builtin("%println")
+```
+
+这个函数同样用了一个内置的函数 `%println`。和其它内置函数不同的是，它的类型签名的返回值部分携带了一个 `! Write`，这表明函数 `println` 在返回一个 `Unit` 同时，会产生一个 `Write` 效应。Lane 语言的函数都是纯的，对于同样的输入，一定保证得到同样的输出。但是 `println` 这种函数会产生副作用，即改变外界控制台的信息内容，因此不能用常规的类型来描述。Lane 提供了效应（Effect）来管理程序中的副作用。
+
+`Write` 这个效应是由执行 Lane 程序的 Lane 运行时处理的。除了 `Write`，标准运行时还提供 `Read`、`Process`、`Random` 等多种效应。这些效应最终会由一个类型 `Io` 来合并到一起。也就是说，运行时可以处理 `Basic.Io.Io` 中的所有效应。
+
+那么其它效应呢？在 Lane 中，效应和自定义类型一样，也可以由用户自己进行定义：
+
+```
+effect Exception {
+  raise(String) -> Unit
+}
+```
+
+这里我们定义了一个异常效应，这是最典型的效应用途。当程序执行到一个我们无法正常处理的情况下，我们就可以抛出一个异常，让调用该程序的程序来处理这类特殊情况。例如，我们有一个从列表中取出第一个元素的函数 `first`，它的返回值类型是列表的元素类型。如果列表中一个元素都没有，这个函数应该返回什么呢？我们可以使用如下枚举类型来表达返回类型：
+
+```
+enum Option[T] {
+  some(T)
+  none()
+}
+```
+
+但也可以让函数产生一个 `Exception` 效应：
+
+```
+fn[T] first(ls : List[T]) -> T ! Exception {
+  match ls {
+    empty() => raise!("no elements in the list")
+    some(head, tail) => head
+  }
+}
+```
+
+产生效应的语法是 `operation!(arguments)`，这个 `operation` 可以是一个定义在自定义效应中的分支，也可以是一个会产生效应的函数。就像 `some` 可以看成一个 `(T) -> Option[T]` 类型的函数一样，`raise` 也可以看成是一个 `(String) -> Unit ! Exception` 类型的函数。当一个表达式内出现了效应，那么整个表达式要么会把这个效应传递到外侧，例如函数的签名处；要么需要用一个 `handle-with` 表达式来处理效应。
+
+在上面的例子中，`first` 函数只是产生了 `raise` 效应而没有处理，因此函数的执行就会同样产生，或者严格地说，可能产生 `Exception` 效应。我们可以在调用处来处理这个效应。处理效应的方式和枚举值的模式匹配类似，根据不同的效应操作进入不同的分支。由于 `Exception` 只有一个操作 `raise`，所以只有一个分支：
+
+```
+fn print_first_integer() -> Unit ! Console {
+  let list = [1, 2, 3, 4]
+  handle first!(list) with {
+    raise(msg, _resume) => println!("got exception: " + msg)
+  } final v {
+    println!("first integer is: " + to_string(v))
+  }
+}
+```
+
+注意到两个新事物：`raise` 模式匹配处，还有第二个没有被使用的参数 `resume`；以及，除了用 with 块匹配所有 `Exception` 类型的操作，还需要一个 `final` 用于函数调用正常返回时的兜底。例如，在调用上面这个函数，就会打印 `first integer is: 1`。也就是说，`first([1, 2, 3, 4])` 正常返回的 `1` 被绑定到了 final 块的名字 `v`。
+
+以下程序表达这样一种逻辑：当调用 `first` 函数时遇到 `raise`，以 0 作为默认调用结果。
+
+```
+handle first!(list) with {
+  raise(_msg, _resume) => 0
+} final v {
+  v
+}
+```
+
+但是，效应的处理逻辑经常和产生效应不在同一个程序。例如，很有可能一个巨大的程序经过很深层次的嵌套，最终调用了 `first`，但是 `first` 却并不知道这个调用者打算如何处理效应。我们可以假设这样一种情况：
+
+```
+handle {
+  ...
+  let fst = first!(some_list)
+  ...
+} with {
+  ...
+} final v {
+  ...
+}
+```
+
+会产生效应的 `first` 函数只是千万行程序中的一行。此时，我们只是希望 `first` 抛出异常时会把 0 绑定到 `fst`，而不希望整个表达式的结果是 0. 我们可以使用 `resume` 来做到这一点：
+
+```
+handle {
+  ...
+  let fst = first!(some_list)
+  ...
+} with {
+  raise(_msg, resume) => resume(0)
+} final v {
+  ...
+}
+```
+
+`resume` 是一个函数，代表程序执行到 `first` 调用处的延续（continuation）。当调用 `resume(0)` 时，程序会回到执行 `first` 的地方，以 `0` 为值填充 `first!(some_list)` 表达式，继续剩余程序的执行。
