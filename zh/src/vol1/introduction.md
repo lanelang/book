@@ -16,7 +16,7 @@ module Hello
 import Basic.Io.*
 
 pub fn hello() -> Unit ! Io {
-  println!("hello, world")
+  println("hello, world")
 }
 ```
 
@@ -37,13 +37,7 @@ hello, world
 ```
 module Basic.Io
 
-pub type Io = { Console }
-
-pub type Console = { Write }
-
-pub effect Write {}
-
-pub let println : (String) -> Unit ! Write = builtin("%println")
+pub let println : (String) -> Unit ! Io = extern("%println")
 ```
 
 然后执行如下命令：
@@ -93,7 +87,7 @@ let add : (Int, Int) -> Int = builtin("%i64_add")
 let sum : Int = add(1, 2)
 
 pub fn print_sum() -> Unit ! Io {
-  println!("sum is " + to_string(sum))
+  println("sum is " + to_string(sum))
 }
 ```
 
@@ -143,7 +137,7 @@ let add : (Int, Int) -> Int = builtin("%i64_add")
 
 pub fn print_sum() -> Unit ! Io {
   let sum = add(1, 2)
-  println!("sum is " + to_string(sum))
+  println("sum is " + to_string(sum))
 }
 ```
 
@@ -157,7 +151,7 @@ pub fn print_sum() -> Unit ! Io {
 pub fn print_sum() -> Unit ! Io {
   let sum = add(1, 2)
   let sum = add(3, 4)
-  println!("sum is " + to_string(sum))
+  println("sum is " + to_string(sum))
 }
 ```
 
@@ -171,7 +165,7 @@ pub fn print_sum() -> Unit ! Io {
     add(sum, c)
   }
   let sum = add3(sum, sum, sum)
-  println!("sum is " + to_string(sum))
+  println("sum is " + to_string(sum))
 }
 ```
 
@@ -189,8 +183,8 @@ let less : (Int, Int) -> Bool = builtin("%i64_lt")
 
 fn print_less_one(a : Int, b : Int) -> Unit ! Io {
   match less(a, b) {
-    true => println!(to_string(a))
-    false => println!(to_string(b))
+    true => println(to_string(a))
+    false => println(to_string(b))
   }
 }
 ```
@@ -204,9 +198,9 @@ fn print_less_one(a : Int, b : Int) -> Unit ! Io {
 ```
 fn print_less_one(a : Int, b : Int) -> Unit ! Io {
   if less(a, b) {
-    println!(to_string(a))
+    println(to_string(a))
   } else {
-    println!(to_string(b))
+    println(to_string(b))
   }
 }
 ```
@@ -238,8 +232,8 @@ let second_coin : Coin = tail()
 
 ```
 match coin {
-  Coin::head() => println!("head")
-  tail() => println!("tail")
+  Coin::head() => println("head")
+  tail() => println("tail")
 }
 ```
 
@@ -391,7 +385,7 @@ fn[T] length(list : List[T]) -> Int {
 let int_list : List[Int] = [1, 2, 3]
 
 fn print_length(list : List[Int]) -> Unit ! Io {
-  println!("length is " + to_string(length(list)))
+  println("length is " + to_string(length(list)))
 }
 ```
 
@@ -587,12 +581,12 @@ fn add_numbers(a : Int, b : Int) -> Int {
 我们在最早的输出字符串程序中是这样定义 `println` 函数的：
 
 ```
-pub let println : (String) -> Unit ! Write = builtin("%println")
+pub let println : (String) -> Unit ! Io = extern("%println")
 ```
 
-这个函数同样用了一个内置的函数 `%println`。和其它内置函数不同的是，它的类型签名的返回值部分携带了一个 `! Write`，这表明函数 `println` 在返回一个 `Unit` 同时，会产生一个 `Write` 效应。Lane 语言的函数都是纯的，对于同样的输入，一定保证得到同样的输出。但是 `println` 这种函数会产生副作用，即改变外界控制台的信息内容，因此不能用常规的类型来描述。Lane 提供了效应（Effect）来管理程序中的副作用。
+这个绑定使用 `extern("%println")` 引用了一个由执行环境提供的外部函数。`extern` 和 `builtin` 不同：`builtin` 表示由编译器直接理解和实现的内置操作，而 `extern` 表示需要在程序加载时由运行时提供的外部符号。`println` 的类型携带 `! Io`，这表明它在返回 `Unit` 的同时可能与外部环境发生可观察的交互。没有效应的 Lane 函数仍然是纯函数；像 `println` 这样会改变控制台内容的函数，则必须在类型中声明 `Io`。
 
-`Write` 这个效应是由执行 Lane 程序的 Lane 运行时处理的。除了 `Write`，标准运行时还提供 `Read`、`Process`、`Random` 等多种效应。这些效应最终会由一个类型 `Io` 来合并到一起。也就是说，运行时可以处理 `Basic.Io.Io` 中的所有效应。
+`Io` 和 `Int` 一样，是 Lane 内置的类型，不由 `Basic.Io` 模块声明。它没有可以被程序处理的效应操作，而是统一表示终端、文件、时钟、随机数、环境变量和网络等外部交互。`Basic.Io` 只是一个普通的库模块，它在这里导出了绑定到 `%println` 的 `println` 函数；编译器不会因为模块名或符号名而给予它特殊待遇。
 
 那么其它效应呢？在 Lane 中，效应和自定义类型一样，也可以由用户自己进行定义：
 
@@ -627,12 +621,12 @@ fn[T] first(ls : List[T]) -> T ! Exception {
 在上面的例子中，`first` 函数只是产生了 `raise` 效应而没有处理，因此函数的执行就会同样产生，或者严格地说，可能产生 `Exception` 效应。我们可以在调用处来处理这个效应。处理效应的方式和枚举值的模式匹配类似，根据不同的效应操作进入不同的分支。由于 `Exception` 只有一个操作 `raise`，所以只有一个分支：
 
 ```
-fn print_first_integer() -> Unit ! Console {
+fn print_first_integer() -> Unit ! Io {
   let list = [1, 2, 3, 4]
   handle first!(list) with {
-    raise(msg, _resume) => println!("got exception: " + msg)
+    raise(msg, _resume) => println("got exception: " + msg)
   } final v {
-    println!("first integer is: " + to_string(v))
+    println("first integer is: " + to_string(v))
   }
 }
 ```

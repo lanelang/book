@@ -16,7 +16,7 @@ module Hello
 import Basic.Io.*
 
 pub fn hello() -> Unit ! Io {
-  println!("hello, world")
+  println("hello, world")
 }
 ```
 
@@ -37,13 +37,7 @@ The command we just entered in the terminal also shows that we need to pass the 
 ```
 module Basic.Io
 
-pub type Io = { Console }
-
-pub type Console = { Write }
-
-pub effect Write {}
-
-pub let println : (String) -> Unit ! Write = builtin("%println")
+pub let println : (String) -> Unit ! Io = extern("%println")
 ```
 
 Then run:
@@ -93,7 +87,7 @@ let add : (Int, Int) -> Int = builtin("%i64_add")
 let sum : Int = add(1, 2)
 
 pub fn print_sum() -> Unit ! Io {
-  println!("sum is " + to_string(sum))
+  println("sum is " + to_string(sum))
 }
 ```
 
@@ -143,7 +137,7 @@ let add : (Int, Int) -> Int = builtin("%i64_add")
 
 pub fn print_sum() -> Unit ! Io {
   let sum = add(1, 2)
-  println!("sum is " + to_string(sum))
+  println("sum is " + to_string(sum))
 }
 ```
 
@@ -157,7 +151,7 @@ Inside the scope of a binding, if a new binding with the same name appears, the 
 pub fn print_sum() -> Unit ! Io {
   let sum = add(1, 2)
   let sum = add(3, 4)
-  println!("sum is " + to_string(sum))
+  println("sum is " + to_string(sum))
 }
 ```
 
@@ -171,7 +165,7 @@ pub fn print_sum() -> Unit ! Io {
     add(sum, c)
   }
   let sum = add3(sum, sum, sum)
-  println!("sum is " + to_string(sum))
+  println("sum is " + to_string(sum))
 }
 ```
 
@@ -189,8 +183,8 @@ let less : (Int, Int) -> Bool = builtin("%i64_lt")
 
 fn print_less_one(a : Int, b : Int) -> Unit ! Io {
   match less(a, b) {
-    true => println!(to_string(a))
-    false => println!(to_string(b))
+    true => println(to_string(a))
+    false => println(to_string(b))
   }
 }
 ```
@@ -204,9 +198,9 @@ For Boolean values, besides pattern matching, we can also use a conditional expr
 ```
 fn print_less_one(a : Int, b : Int) -> Unit ! Io {
   if less(a, b) {
-    println!(to_string(a))
+    println(to_string(a))
   } else {
-    println!(to_string(b))
+    println(to_string(b))
   }
 }
 ```
@@ -238,8 +232,8 @@ With pattern matching, we can use these values:
 
 ```
 match coin {
-  Coin::head() => println!("head")
-  tail() => println!("tail")
+  Coin::head() => println("head")
+  tail() => println("tail")
 }
 ```
 
@@ -391,7 +385,7 @@ fn[T] length(list : List[T]) -> Int {
 let int_list : List[Int] = [1, 2, 3]
 
 fn print_length(list : List[Int]) -> Unit ! Io {
-  println!("length is " + to_string(length(list)))
+  println("length is " + to_string(length(list)))
 }
 ```
 
@@ -587,12 +581,12 @@ When we use the `+` operator to concatenate strings, the compiler looks for a va
 In the first program that printed a string, we defined the `println` function like this:
 
 ```
-pub let println : (String) -> Unit ! Write = builtin("%println")
+pub let println : (String) -> Unit ! Io = extern("%println")
 ```
 
-This function likewise uses a builtin function, `%println`. Unlike other builtin functions, the return portion of its type signature carries `! Write`, which indicates that `println` produces a `Write` effect while returning `Unit`. Lane functions are pure: the same input always produces the same output. However, a function such as `println` produces a side effect by changing the content of the external console, so it cannot be described by an ordinary type. Lane provides effects to manage side effects in programs.
+This binding uses `extern("%println")` to refer to a function supplied by the execution environment. `extern` differs from `builtin`: a builtin is an operation understood and implemented directly by the compiler, while an extern names a symbol that the runtime must provide when the program is loaded. The type of `println` carries `! Io`, indicating that it may interact observably with the external environment while returning `Unit`. Lane functions without effects remain pure; a function such as `println`, which changes the console's contents, must declare `Io` in its type.
 
-The Lane runtime that executes Lane programs handles the `Write` effect. In addition to `Write`, the standard runtime provides several effects, including `Read`, `Process`, and `Random`. These effects are ultimately combined by the type `Io`. In other words, the runtime can handle every effect in `Basic.Io.Io`.
+Like `Int`, `Io` is a type built into Lane rather than declared by the `Basic.Io` module. It has no effect operations that a program can handle; instead, it uniformly represents interaction with the terminal, files, clocks, randomness, environment variables, networks, and other parts of the outside world. `Basic.Io` is only an ordinary library module that exports the `println` function bound to `%println`; neither its module name nor the symbol name receives special treatment from the compiler.
 
 What about other effects? In Lane, users can define effects just as they define custom types:
 
@@ -627,12 +621,12 @@ The syntax for producing an effect is `operation!(arguments)`. The `operation` c
 In the example above, the `first` function produces the `raise` effect without handling it, so executing the function also produces, or more precisely may produce, an `Exception` effect. We can handle this effect at the call site. Handling an effect is similar to pattern matching on an enum value: different effect operations enter different branches. Because `Exception` has only one operation, `raise`, there is only one branch:
 
 ```
-fn print_first_integer() -> Unit ! Console {
+fn print_first_integer() -> Unit ! Io {
   let list = [1, 2, 3, 4]
   handle first!(list) with {
-    raise(msg, _resume) => println!("got exception: " + msg)
+    raise(msg, _resume) => println("got exception: " + msg)
   } final v {
-    println!("first integer is: " + to_string(v))
+    println("first integer is: " + to_string(v))
   }
 }
 ```
