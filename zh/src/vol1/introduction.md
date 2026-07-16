@@ -37,7 +37,7 @@ hello, world
 ```
 module Basic.Io
 
-pub let println : (String) -> Unit ! Io = extern("%println")
+pub let println : (String) -> Unit ! Io = extern("println")
 ```
 
 然后执行如下命令：
@@ -581,12 +581,12 @@ fn add_numbers(a : Int, b : Int) -> Int {
 我们在最早的输出字符串程序中是这样定义 `println` 函数的：
 
 ```
-pub let println : (String) -> Unit ! Io = extern("%println")
+pub let println : (String) -> Unit ! Io = extern("println")
 ```
 
-这个绑定使用 `extern("%println")` 引用了一个由执行环境提供的外部函数。`extern` 和 `builtin` 不同：`builtin` 表示由编译器直接理解和实现的内置操作，而 `extern` 表示需要在程序加载时由运行时提供的外部符号。`println` 的类型携带 `! Io`，这表明它在返回 `Unit` 的同时可能与外部环境发生可观察的交互。没有效应的 Lane 函数仍然是纯函数；像 `println` 这样会改变控制台内容的函数，则必须在类型中声明 `Io`。
+这个绑定使用 `extern("println")` 引用了一个由执行环境提供的外部函数。`extern` 和 `builtin` 不同：`builtin` 表示由编译器直接理解和实现的内置操作，而 `extern` 表示需要在程序加载时由运行时提供的外部符号。`println` 的类型携带 `! Io`，这表明它在返回 `Unit` 的同时可能与外部环境发生可观察的交互。没有效应的 Lane 函数仍然是纯函数；像 `println` 这样会改变控制台内容的函数，则必须在类型中声明 `Io`。
 
-`Io` 和 `Int` 一样，是 Lane 内置的类型，不由 `Basic.Io` 模块声明。它没有可以被程序处理的效应操作，而是统一表示终端、文件、时钟、随机数、环境变量和网络等外部交互。`Basic.Io` 只是一个普通的库模块，它在这里导出了绑定到 `%println` 的 `println` 函数；编译器不会因为模块名或符号名而给予它特殊待遇。
+`Io` 和 `Int` 一样，是 Lane 内置的类型，不由 `Basic.Io` 模块声明。它没有可以被程序处理的效应操作，而是统一表示终端、文件、时钟、随机数、环境变量和网络等外部交互。`Basic.Io` 只是一个普通的库模块，它在这里导出了绑定到 `println` 运行时符号的 `println` 函数；编译器不会因为模块名或符号名而给予它特殊待遇。
 
 那么其它效应呢？在 Lane 中，效应和自定义类型一样，也可以由用户自己进行定义：
 

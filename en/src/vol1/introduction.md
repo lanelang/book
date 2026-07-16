@@ -37,7 +37,7 @@ The command we just entered in the terminal also shows that we need to pass the 
 ```
 module Basic.Io
 
-pub let println : (String) -> Unit ! Io = extern("%println")
+pub let println : (String) -> Unit ! Io = extern("println")
 ```
 
 Then run:
@@ -581,12 +581,12 @@ When we use the `+` operator to concatenate strings, the compiler looks for a va
 In the first program that printed a string, we defined the `println` function like this:
 
 ```
-pub let println : (String) -> Unit ! Io = extern("%println")
+pub let println : (String) -> Unit ! Io = extern("println")
 ```
 
-This binding uses `extern("%println")` to refer to a function supplied by the execution environment. `extern` differs from `builtin`: a builtin is an operation understood and implemented directly by the compiler, while an extern names a symbol that the runtime must provide when the program is loaded. The type of `println` carries `! Io`, indicating that it may interact observably with the external environment while returning `Unit`. Lane functions without effects remain pure; a function such as `println`, which changes the console's contents, must declare `Io` in its type.
+This binding uses `extern("println")` to refer to a function supplied by the execution environment. `extern` differs from `builtin`: a builtin is an operation understood and implemented directly by the compiler, while an extern names a symbol that the runtime must provide when the program is loaded. The type of `println` carries `! Io`, indicating that it may interact observably with the external environment while returning `Unit`. Lane functions without effects remain pure; a function such as `println`, which changes the console's contents, must declare `Io` in its type.
 
-Like `Int`, `Io` is a type built into Lane rather than declared by the `Basic.Io` module. It has no effect operations that a program can handle; instead, it uniformly represents interaction with the terminal, files, clocks, randomness, environment variables, networks, and other parts of the outside world. `Basic.Io` is only an ordinary library module that exports the `println` function bound to `%println`; neither its module name nor the symbol name receives special treatment from the compiler.
+Like `Int`, `Io` is a type built into Lane rather than declared by the `Basic.Io` module. It has no effect operations that a program can handle; instead, it uniformly represents interaction with the terminal, files, clocks, randomness, environment variables, networks, and other parts of the outside world. `Basic.Io` is only an ordinary library module that exports the `println` function bound to the `println` runtime symbol; neither its module name nor the symbol name receives special treatment from the compiler.
 
 What about other effects? In Lane, users can define effects just as they define custom types:
 
