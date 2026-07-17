@@ -3,6 +3,7 @@
 # 卷一：标准
 
 - [Lane 语言简介](./vol1/introduction.md)
+- [类型](./vol1/types.md)
 
 # 卷二：设计和实现
 

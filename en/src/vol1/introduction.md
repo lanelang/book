@@ -23,7 +23,7 @@ pub fn hello() -> Unit ! Io {
 How to run this program depends on the context. In a Unix environment with the lane tool installed, suppose we save the text above as `hello.lane`. The content of that file is the program's source code. Run the following command:
 
 ```
-lane run hello.lane:hello --lib-dir $LANE_HOME/basic
+lane run hello.lane:hello
 ```
 
 This runs the program and prints the following output in the terminal:
@@ -43,7 +43,7 @@ pub let println : (String) -> Unit ! Io = extern("println")
 Then run:
 
 ```
-lane run hello.lane:hello --lib io.lane
+lane run hello.lane:hello --lib io.lane --no-basic
 ```
 
 This prints the expected output.
@@ -623,7 +623,7 @@ In the example above, the `first` function produces the `raise` effect without h
 ```
 fn print_first_integer() -> Unit ! Io {
   let list = [1, 2, 3, 4]
-  handle first!(list) with {
+  handle first(list) with {
     raise(msg, _resume) => println("got exception: " + msg)
   } final v {
     println("first integer is: " + to_string(v))
@@ -636,7 +636,7 @@ Notice two new things: the `raise` pattern has a second, unused parameter, `resu
 The following program expresses this logic: when calling `first` encounters `raise`, use 0 as the default result of the call.
 
 ```
-handle first!(list) with {
+handle first(list) with {
   raise(_msg, _resume) => 0
 } final v {
   v
@@ -648,7 +648,7 @@ However, the logic for handling an effect is often not in the same program as th
 ```
 handle {
   ...
-  let fst = first!(some_list)
+  let fst = first(some_list)
   ...
 } with {
   ...
@@ -662,7 +662,7 @@ The effectful `first` function is only one line in a program with tens of millio
 ```
 handle {
   ...
-  let fst = first!(some_list)
+  let fst = first(some_list)
   ...
 } with {
   raise(_msg, resume) => resume(0)
@@ -671,4 +671,8 @@ handle {
 }
 ```
 
-`resume` is a function that represents the continuation of the program at the call to `first`. When `resume(0)` is called, the program returns to where `first` was executed, fills the `first!(some_list)` expression with the value `0`, and continues running the rest of the program.
+`resume` is a function that represents the continuation of the program at the call to `first`. When `resume(0)` is called, the program returns to where `first` was executed, fills the `first(some_list)` expression with the value `0`, and continues running the rest of the program.
+
+## Summary
+
+So far, we have introduced most of the language features commonly used in Lane. With these features, we can already write large programs. Later chapters will discuss each basic feature in more detail.

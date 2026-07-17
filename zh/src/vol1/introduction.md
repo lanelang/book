@@ -23,7 +23,7 @@ pub fn hello() -> Unit ! Io {
 如何运行这个程序取决于具体场景。在安装了 lane 工具的 Unix 环境中，假设我们将上述文本保存为 `hello.lane` 文件，文件内容就叫作程序的源代码。使用如下命令：
 
 ```
-lane run hello.lane:hello --lib-dir $LANE_HOME/basic
+lane run hello.lane:hello
 ```
 
 即可运行该程序，并在终端中看到如下信息：
@@ -43,7 +43,7 @@ pub let println : (String) -> Unit ! Io = extern("println")
 然后执行如下命令：
 
 ```
-lane run hello.lane:hello --lib io.lane
+lane run hello.lane:hello --lib io.lane --no-basic
 ```
 
 即可正常打印。
@@ -623,7 +623,7 @@ fn[T] first(ls : List[T]) -> T ! Exception {
 ```
 fn print_first_integer() -> Unit ! Io {
   let list = [1, 2, 3, 4]
-  handle first!(list) with {
+  handle first(list) with {
     raise(msg, _resume) => println("got exception: " + msg)
   } final v {
     println("first integer is: " + to_string(v))
@@ -636,7 +636,7 @@ fn print_first_integer() -> Unit ! Io {
 以下程序表达这样一种逻辑：当调用 `first` 函数时遇到 `raise`，以 0 作为默认调用结果。
 
 ```
-handle first!(list) with {
+handle first(list) with {
   raise(_msg, _resume) => 0
 } final v {
   v
@@ -648,7 +648,7 @@ handle first!(list) with {
 ```
 handle {
   ...
-  let fst = first!(some_list)
+  let fst = first(some_list)
   ...
 } with {
   ...
@@ -662,7 +662,7 @@ handle {
 ```
 handle {
   ...
-  let fst = first!(some_list)
+  let fst = first(some_list)
   ...
 } with {
   raise(_msg, resume) => resume(0)
@@ -671,4 +671,8 @@ handle {
 }
 ```
 
-`resume` 是一个函数，代表程序执行到 `first` 调用处的延续（continuation）。当调用 `resume(0)` 时，程序会回到执行 `first` 的地方，以 `0` 为值填充 `first!(some_list)` 表达式，继续剩余程序的执行。
+`resume` 是一个函数，代表程序执行到 `first` 调用处的延续（continuation）。当调用 `resume(0)` 时，程序会回到执行 `first` 的地方，以 `0` 为值填充 `first(some_list)` 表达式，继续剩余程序的执行。
+
+## 总结
+
+到目前为止，我们已经介绍了 Lane 语言中大部分常用的语言要素。借助这些要素，已经可以编写大型程序。后续章节会逐一展开介绍各种基本要素。
